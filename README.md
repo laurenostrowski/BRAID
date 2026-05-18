@@ -1,5 +1,5 @@
 # BRAID:
-This repository provides BRAID (**Behaviorally relevant Analysis of Intrinsic Dynamics**) from the Shanechi lab, with bugs fixed and patches to source code
+This repository provides BRAID (**Behaviorally Relevant Analysis of Intrinsic Dynamics**) from the Shanechi lab, with bugs fixed and patches to source code
 
 Parsa Vahidi, Omid G. Sani, and Maryam Shanechi. *BRAID: Input-driven nonlinear dynamical modeling of neural-behavioral data.* ***In The Thirteenth International Conference on Learning
 Representations***, 2025. URL https://openreview.net/forum?id=3usdM1AuI3.
