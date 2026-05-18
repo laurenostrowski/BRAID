@@ -11,7 +11,7 @@ for-loop / if-statement indentation: hidden_layers, hidden_units outside the loo
 **Fix: changed source code to parse model args correctly**
 
 2. Stage 3 args inheritance (same issue with linear/non-linear models not be initiated correctly: **was making A3, K3, Cz3 linear always:**  
-Didn’t change source code, fixed by always passing stage 3 argos explicitly when model is fit: A3_args=NL_args, K3_args=NL_args, Cz3_args=NL_args
+Didn’t change source code, fixed by always passing stage 3 args explicitly when model is fit *(A3_args=NL_args, K3_args=NL_args, Cz3_args=NL_args)*
 
 3. Patch to source code to enable noUZ feedthrough control:  
 I needed this in order to have a model where input can impact spiking activity directly (u → y feedthrough) but not behavior directly (NO u → z feedthrough). With this patch, when noUZ us set to True, input impacts behavior through the direct pathway (u → x1 → z) as well as an indirect pathway with a hidden layer (u → x3 → z)  
