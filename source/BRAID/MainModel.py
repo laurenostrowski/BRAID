@@ -618,7 +618,7 @@ class MainModel(PredictorModel):
             'has_UFT_reg': self.has_UFT_reg,       ## ADDED
             'has_UFT_z': self.has_UFT_z,           ## ADDED
             'has_UFT_reg_z': self.has_UFT_reg_z,   ## ADDED
-            'skip_Cy': self.skip_Cy if hasattr(self, 'linear_cell') else False,         # If true and only stage 1 (n1 >= nx), will not learn Cy (model will not have neural self-prediction ability)
+            'skip_Cy': self.skip_Cy if hasattr(self, 'skip_Cy') else False,         # If true and only stage 1 (n1 >= nx), will not learn Cy (model will not have neural self-prediction ability)
             'use_existing_prep_models': True,
             'clear_graph': False, # If true will wipe the tf session before starting, so that variables names don't get numbers at the end and mem is preserved
             'YType': self.YType, 'ZType': self.ZType, 'UType': self.UType if hasattr(self, 'UType') else None,
@@ -777,8 +777,9 @@ class MainModel(PredictorModel):
             YType = autoDetectSignalType(Y)
         if UType is None and U is not None:  # Auto detect signal types
             UType = autoDetectSignalType(U)
-        if Z is not None and Z is not None:
+        if ZType is None and Z is not None:  # Auto detect signal types
             ZType = autoDetectSignalType(Z)
+        if Z is not None:
             ZLossFuncs, ZTrue, zDist = self.prep_observation_for_training(Z, ZType)
         else:
             zDist = None
@@ -1889,7 +1890,7 @@ class MainModel(PredictorModel):
             else:
                 w = self.model1
                 rnn_cell_args = copy.deepcopy({'ASettings': self.A1_args, 'KSettings': self.K1_args, 'CSettings': self.Cz1_args})
-                nft = self.ny+self.nu if self.has_Dyz and self.Dyz else self.nu
+                nft = self.ny+self.nu if self.has_Dyz else self.nu
                 self.model1 = RNNModel(self.n1, self.ny+self.nu, self.block_samples, self.batch_size, ny_out=self.nz, nft=nft, 
                                                 LSTM_cell=hasattr(self, 'LSTM_cell') and self.LSTM_cell, 
                                                 out_dist=zDist, 
@@ -1947,7 +1948,7 @@ class MainModel(PredictorModel):
                     CzInputDim = self.n2+self.nu
                 else:
                     CzInputDim = self.n1+self.n2+self.nu
-                if self.has_Dyz and self.Dyz and (self.n1==0 or self.model2_Cz_Full):
+                if self.has_Dyz and (self.n1==0 or self.model2_Cz_Full):
                     CzInputDim += self.ny
                 reg_args = copy.deepcopy(self.Cz2_args)
                 reg_args['has_prior_pred'] = True # From stage 1
@@ -2387,7 +2388,7 @@ class MainModel(PredictorModel):
         if hasattr(s, 'B'):
             B = s.B
         else: 
-            B = s.B_KD + s.K @ s.Dy
+            B = B_KD + s.K @ Dy
 
         if hasattr(s, 'x0') and x0 is None:
             x0 = s.x0
@@ -2655,6 +2656,17 @@ class MainModel(PredictorModel):
         steps_ahead, _, steps_ahead_model1, _, model1_orig_step_inds \
              = self.get_model_steps_ahead(steps_ahead)
         
+        # Save originals so a call with U=None doesn't permanently demote these flags on self 
+        # (which would silently corrupt all subsequent .predict / .fit calls)
+        # Flags restored at every exit from predict() below
+        _ft_flag_backup = {
+            'has_UFT':              self.has_UFT,
+            'has_UFT_reg':          self.has_UFT_reg,
+            'has_UFT_z':            self.has_UFT_z,
+            'has_UFT_reg_z':        self.has_UFT_reg_z,
+            'observable_U_in_Kfw':  self.observable_U_in_Kfw,
+            'observable_U_in_Cfw':  self.observable_U_in_Cfw,
+        }
         self.has_UFT = U is not None and self.nu>0 and self.has_UFT 
         self.has_UFT_reg = U is not None and self.nu>0 and self.has_UFT_reg 
         self.has_UFT_z = U is not None and self.nu>0 and self.has_UFT_z
@@ -2908,6 +2920,9 @@ class MainModel(PredictorModel):
                     allZp = allZp.transpose([1,0,2])
                 allZp_steps[saInd] = allZp
 
+        # Restore FT/observable flags so this call leaves no side-effect on self
+        for _k, _v in _ft_flag_backup.items():
+            setattr(self, _k, _v)
         set_global_tf_eagerly_flag(eagerly_flag_backup)
         return tuple(allZp_steps) + tuple(allYp_steps) + tuple(allXp_steps)
 
