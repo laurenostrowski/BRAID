@@ -16,3 +16,5 @@ Didn’t change source code, fixed by always passing stage 3 args explicitly whe
 3. Patch to source code to enable noUZ feedthrough control:  
 I needed this in order to have a model where input can impact spiking activity directly (u → y feedthrough) but not behavior directly (NO u → z feedthrough). With this patch, when noUZ us set to True, input impacts behavior through the direct pathway (u → x1 → z) as well as an indirect pathway with a hidden layer (u → x3 → z)  
 *use noUZ=True when fitting model to enable*
+
+4. Additional optimization of code to make training more efficient (batching, etc.)
